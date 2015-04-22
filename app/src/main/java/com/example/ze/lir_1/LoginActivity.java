@@ -36,6 +36,7 @@ import com.google.android.gms.plus.Plus;
 import com.google.gson.Gson;
 
 import org.apache.http.client.CookieStore;
+import org.apache.http.client.HttpClient;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
@@ -305,6 +306,7 @@ public class LoginActivity extends Activity
         @Override
         public void onResponse(String response) {
             //Toast.makeText(context, "User is connected!", Toast.LENGTH_LONG).show();
+
             openSessionUser();
         }
     }

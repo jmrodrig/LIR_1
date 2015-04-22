@@ -13,11 +13,14 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.google.gson.Gson;
 
+import org.apache.http.client.CookieStore;
+import org.apache.http.cookie.Cookie;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by Ze on 18-04-2015.
@@ -26,7 +29,6 @@ public class SessionUser extends Application {
     private static SessionUser mInstance;
     private User userInfo;
     private Context activityContext;
-
 
     private SessionUser(User user){
         userInfo = user;
@@ -65,8 +67,15 @@ public class SessionUser extends Application {
 
     public String getUserAvatar() {
         if (userInfo.avatarUrl==null) {
+            //TODO: replace
             return "http://lostinreality.net/assets/images/lir-logo.png";
         }
         return userInfo.avatarUrl;
+    }
+
+    public static List<Cookie> getSessionCookieList() {
+        CookieStore store = RequestsSingleton.getHttpClient().getCookieStore();
+        List<Cookie> cookieList = store.getCookies();
+        return cookieList;
     }
 }

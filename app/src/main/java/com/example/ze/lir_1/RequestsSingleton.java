@@ -20,7 +20,7 @@ public class RequestsSingleton extends Application {
     private static RequestsSingleton mInstance = null;
     private RequestQueue mRequestQueue;
     private ImageLoader mImageLoader;
-    private AbstractHttpClient mClient;
+    private static AbstractHttpClient mClient;
 
 
     private RequestsSingleton(Context ctx){
@@ -52,6 +52,8 @@ public class RequestsSingleton extends Application {
         return this.mImageLoader;
     }
 
-    public AbstractHttpClient getHttpClient() { return this.mClient; }
+    public static AbstractHttpClient getHttpClient() {
+        return mClient;
+    }
 
 }

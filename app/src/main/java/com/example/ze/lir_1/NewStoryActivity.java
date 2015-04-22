@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.*;
 import android.location.Location;
@@ -17,6 +18,7 @@ import android.os.ResultReceiver;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.KeyListener;
 import android.util.AttributeSet;
@@ -32,22 +34,40 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.NetworkImageView;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.gson.Gson;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+
+import ch.boye.httpclientandroidlib.entity.mime.content.FileBody;
 
 
 /**
@@ -64,6 +84,7 @@ public class NewStoryActivity extends ActionBarActivity {
     private Boolean updatingArticleInfo = false;
 
     private String mWebAddress = "";
+    private String mStoryImagePath = "";
 
 
     @Override
@@ -74,10 +95,9 @@ public class NewStoryActivity extends ActionBarActivity {
         mSessionUser = SessionUser.getInstance();
         mImageLoader = RequestsSingleton.getInstance(this).getImageLoader();
 
-
         //TODO Load session user info (thumbnail)
         NetworkImageView mUserImage = (NetworkImageView) findViewById(R.id.user_image);
-        mUserImage.setImageUrl(mSessionUser.getUserAvatar(),mImageLoader);
+        mUserImage.setImageUrl(mSessionUser.getUserAvatar(), mImageLoader);
         TextView mLocationText = (TextView) findViewById(R.id.story_location);
         mLocationText.setText(mSessionUser.getUserFullName() + " at " + getLocationAddress());
 
@@ -90,7 +110,7 @@ public class NewStoryActivity extends ActionBarActivity {
         mImageLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(Intent.ACTION_PICK,android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                Intent i = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(i, RESULT_LOAD_IMAGE);
             }
         });
@@ -113,10 +133,12 @@ public class NewStoryActivity extends ActionBarActivity {
 
         mStoryText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
 
             @Override
             public void afterTextChanged(Editable s) {
@@ -124,19 +146,18 @@ public class NewStoryActivity extends ActionBarActivity {
                 String address = null;
                 String tx = s.toString();
                 if (tx.contains("http://"))
-                    address = grabWebpageAddress(tx,"http://");
+                    address = grabWebpageAddress(tx, "http://");
                 else if (tx.contains("https://"))
-                    address = grabWebpageAddress(tx,"https://");
+                    address = grabWebpageAddress(tx, "https://");
                 else if (tx.contains("www."))
-                    address = grabWebpageAddress(tx,"www.");
+                    address = grabWebpageAddress(tx, "www.");
                 else
                     return;
 
                 if (address.equals(getWebAddress())) {
                     mArticleProgressBar.setVisibility(View.GONE);
                     return;
-                }
-                else
+                } else
                     setWebAddress(address);
 
                 //TODO avoid trigger of GrabWebpage everytime the text is changed
@@ -161,8 +182,8 @@ public class NewStoryActivity extends ActionBarActivity {
 
     public String grabWebpageAddress(String text, String regex) {
         mArticleProgressBar.setVisibility(View.VISIBLE);
-        String[] address = text.split(regex,2);
-        address = address[1].split(" ",2);
+        String[] address = text.split(regex, 2);
+        address = address[1].split(" ", 2);
         if (regex.equals(("www.")))
             return "http://" + regex + address[0];
         return regex + address[0];
@@ -204,11 +225,11 @@ public class NewStoryActivity extends ActionBarActivity {
             mArticleTitle.setText(result.get(1));
             mArticleText.setText(result.get(0));
             mArticleHost.setText(result.get(3));
-            mArticleImage.setImageUrl(result.get(2),mImageLoader);
+            mArticleImage.setImageUrl(result.get(2), mImageLoader);
 
             if (result.get(2).equals("")) {
                 mArticleImagePictureFrame.setVisibility(View.GONE);
-                mArticleImage.setImageUrl(result.get(2),mImageLoader);
+                mArticleImage.setImageUrl(result.get(2), mImageLoader);
             }
 
             mImageLayout.setVisibility(View.GONE);
@@ -240,8 +261,8 @@ public class NewStoryActivity extends ActionBarActivity {
 
                 return articleData;
 
-            // Makes sure that the InputStream is closed after the app is
-            // finished using it.
+                // Makes sure that the InputStream is closed after the app is
+                // finished using it.
             } finally {
                 if (is != null) {
                     is.close();
@@ -277,7 +298,7 @@ public class NewStoryActivity extends ActionBarActivity {
             };
 
             articleParseResult.add(
-                    StringEscapeUtils.unescapeHtml4(parseRegex(headerHtml,descriptionRegexs)));
+                    StringEscapeUtils.unescapeHtml4(parseRegex(headerHtml, descriptionRegexs)));
 
             //title Regexs
             String[] titleRegexs = {
@@ -288,7 +309,7 @@ public class NewStoryActivity extends ActionBarActivity {
                     "<meta name=\"title\""
             };
             articleParseResult.add(
-                    StringEscapeUtils.unescapeHtml4(parseRegex(headerHtml,titleRegexs)));
+                    StringEscapeUtils.unescapeHtml4(parseRegex(headerHtml, titleRegexs)));
 
             //image Regexs
             String[] imageRegexs = {
@@ -298,8 +319,7 @@ public class NewStoryActivity extends ActionBarActivity {
             };
 
 
-
-            articleParseResult.add(parseRegex(headerHtml,imageRegexs));
+            articleParseResult.add(parseRegex(headerHtml, imageRegexs));
 
             return articleParseResult;
         }
@@ -309,7 +329,7 @@ public class NewStoryActivity extends ActionBarActivity {
                 return "";
 
             String dcrpRegex = "";
-            for(String rg : rgs ) {
+            for (String rg : rgs) {
                 if (header.contains(rg)) {
                     dcrpRegex = rg;
                     break;
@@ -318,8 +338,8 @@ public class NewStoryActivity extends ActionBarActivity {
 
             if (dcrpRegex != "") {
                 return header.split(dcrpRegex, 2)[1]
-                        .split("content=\"",2)[1]
-                        .split("\"",2)[0];
+                        .split("content=\"", 2)[1]
+                        .split("\"", 2)[0];
             }
             return "";
         }
@@ -343,7 +363,6 @@ public class NewStoryActivity extends ActionBarActivity {
     }
 
 
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -354,7 +373,7 @@ public class NewStoryActivity extends ActionBarActivity {
                 // Get the Image from data
 
                 Uri selectedImage = data.getData();
-                String[] filePathColumn = { MediaStore.Images.Media.DATA };
+                String[] filePathColumn = {MediaStore.Images.Media.DATA};
 
                 // Get the cursor
                 Cursor cursor = getContentResolver().query(selectedImage,
@@ -372,12 +391,28 @@ public class NewStoryActivity extends ActionBarActivity {
                     return;
                 }
 
+                mStoryImagePath = imgDecodableString;
+
                 mArticleLayout.setVisibility(View.GONE);
                 mImageLayout.setVisibility(View.VISIBLE);
                 findViewById(R.id.discard_image_button).setVisibility(View.VISIBLE);
                 // Set the Image in ImageView after decoding the String
                 mStoryPicture.setImageBitmap(BitmapFactory
-                        .decodeFile(imgDecodableString));
+                        .decodeFile(mStoryImagePath));
+
+
+                //new SendStoryImageTask().execute();
+                File imageFile = new File(mStoryImagePath);
+                FileBody fileBody = new FileBody(imageFile);
+                String fileName = imageFile.getName();
+                String url = "http://lostinreality.net/story/24/post/39/uploadimage";
+                HashMap<String, String> params = new HashMap<String, String>();
+
+                RequestQueue queue = RequestsSingleton.getInstance(this.getApplicationContext()).getRequestQueue();
+
+                MultipartRequest multipartRequest = new MultipartRequest(url, "s", fileBody, new SendFileSuccess(this), new SendFileError(this));
+                queue.add(multipartRequest);
+
 
             } else {
                 Toast.makeText(this, "You haven't picked Image",
@@ -390,9 +425,40 @@ public class NewStoryActivity extends ActionBarActivity {
 
     }
 
+    /**
+     * Runs when a JsonArrayRequest object successfully gets an response.
+     */
+    class SendFileSuccess implements Response.Listener<String> {
+        private Context context;
+
+        public SendFileSuccess(Context ctx) {
+            context = ctx;
+        }
+
+        @Override
+        public void onResponse(String response) {
+            Toast.makeText(context, "image uploaded!",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    class SendFileError implements Response.ErrorListener {
+        private Context context;
+
+        public SendFileError(Context ctx) {
+            context = ctx;
+        }
+
+        @Override
+        public void onErrorResponse(VolleyError error) {
+            // TODO Make an error handler
+            Toast.makeText(context, "Nothing happened!", Toast.LENGTH_LONG).show();
+        }
+    }
+
     public String getLocationAddress() {
         String address = getIntent().getExtras().getString("location_address");
-        return address.split("\n",2)[0] + ", " + address.split("\n",2)[1];
+        return address.split("\n", 2)[0] + ", " + address.split("\n", 2)[1];
     }
 
 }
