@@ -8,6 +8,15 @@
     tools:context="com.example.ze.lir_1.LoginActivity">
 
     <!-- Login progress -->
+    <ImageView
+        android:layout_width="170dp"
+        android:layout_height="170dp"
+        android:id="@+id/imageView3"
+        android:src="@drawable/logo_vectorial_big"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="60dp"
+        android:layout_marginBottom="30dp" />
+
     <ProgressBar android:id="@+id/login_progress" style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:layout_marginBottom="8dp" android:visibility="gone" />
@@ -16,10 +25,6 @@
         android:layout_height="match_parent">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical">
-
-            <com.google.android.gms.common.SignInButton android:id="@+id/plus_sign_in_button"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:layout_marginBottom="32dp" />
 
             <LinearLayout android:id="@+id/plus_sign_out_buttons"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -58,7 +63,22 @@
                     android:layout_marginTop="16dp" android:text="@string/action_sign_in"
                     android:textStyle="bold" />
 
+                <Button
+                    style="?android:textAppearanceSmall"
+                    android:id="@+id/sign_up_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="or create an account on our website"
+                    android:textStyle="bold" />
+
             </LinearLayout>
+
+            <com.google.android.gms.common.SignInButton android:id="@+id/plus_sign_in_button"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                android:visibility="gone" />
+
         </LinearLayout>
     </ScrollView>
 

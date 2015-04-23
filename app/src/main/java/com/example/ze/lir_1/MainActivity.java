@@ -75,31 +75,39 @@ public class MainActivity extends ActionBarActivity implements
 
     private AddressResultReceiver mResultReceiver;
     protected String mAddressOutput;
+    private LatLng mFocusLocation;
+    private Boolean startNewStoryActivity = false;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        //getSupportActionBar().setIcon(R.drawable.lir_logo_banner_white);
+        //getSupportActionBar().setDisplayUseLogoEnabled(true);
+
+        if (savedInstanceState != null) {
+            return;
+        }
+
+        storyMapFragment = new StoryMapFragment();
+        storyListFragment = new StoryListFragment();
 
         //TODO Get storyList from Cache
-        //TODO warn when no internet connectio is set (wi-fi or network) http://developer.android.com/training/basics/network-ops/connecting.html
-        //TODO handle the connections. User is not getting authenticated. Too much connections?
+        //TODO warn when no internet connection is set (wi-fi or network) http://developer.android.com/training/basics/network-ops/connecting.html
 
         // Get Request Queue
         queue = RequestsSingleton.getInstance(this).getRequestQueue();
 
         mResultReceiver = new AddressResultReceiver(new Handler());
 
-
         String url ="http://lostinreality.net/publishedstories";
-        fetchStoriesRequest = new JsonArrayRequest(Request.Method.GET, url, null, new ResponseListener(), new ErrorListener());
 
-        storyListFragment = new StoryListFragment();
-        getSupportFragmentManager().beginTransaction().add(R.id.fragment_container,storyListFragment).commit();
+        fetchStoriesRequest = new JsonArrayRequest(Request.Method.GET, url, null, new ResponseListener(), new ErrorListener());
+        fetchStories();
 
         storyMapFragment = new StoryMapFragment();
+        storyListFragment = new StoryListFragment();
 
         openStoryListFragmentButton = (Button) findViewById(R.id.story_list_button);
         openStoryMapFragmentButton = (Button) findViewById(R.id.story_map_button);
@@ -117,7 +125,7 @@ public class MainActivity extends ActionBarActivity implements
                     storyMapFragment = new StoryMapFragment();
                 FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
                 transaction.replace(R.id.fragment_container, storyMapFragment);
-                //transaction.addToBackStack(null);
+                transaction.addToBackStack(null);
                 transaction.commit();
             }
         });
@@ -130,9 +138,11 @@ public class MainActivity extends ActionBarActivity implements
                 if(storyListFragment == null )
                     storyListFragment = new StoryListFragment();
 
+                setMapCurrentFocusLocation();
+                setCurrentFocusedAddress();
                 FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
                 transaction.replace(R.id.fragment_container, storyListFragment);
-                //transaction.addToBackStack(null);
+                transaction.addToBackStack(null);
                 transaction.commit();
 
             }
@@ -149,10 +159,25 @@ public class MainActivity extends ActionBarActivity implements
     }
 
     private void loadNewStoryActivity() {
+        startNewStoryActivityAfterAddressReceived(true);
+        setMapCurrentFocusLocation();
+        setCurrentFocusedAddress();
+    }
+
+    private Boolean isStartNewStoryActivityAfterAddressReceived() {
+        return startNewStoryActivity;
+    }
+
+    private void startNewStoryActivityAfterAddressReceived(Boolean start) {
+        startNewStoryActivity = start;
+    }
+
+    private void startNewStoryActivity() {
         Intent intent = new Intent(this,NewStoryActivity.class);
         intent.putExtra("location_address",mAddressOutput);
         startActivity(intent);
     }
+
 
     protected synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -177,8 +202,8 @@ public class MainActivity extends ActionBarActivity implements
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
+    protected void onDestroy() {
+        super.onDestroy();
         if (mGoogleApiClient.isConnected()) {
             mGoogleApiClient.disconnect();
         }
@@ -198,6 +223,9 @@ public class MainActivity extends ActionBarActivity implements
     @Override
     public void onConnected(Bundle connectionHint) {
         Log.i(TAG, "Connected to GoogleApiClient");
+        getLastKnowLocation();
+        inflateStoryMapFragment();
+
     }
 
     @Override
@@ -223,8 +251,9 @@ public class MainActivity extends ActionBarActivity implements
     }
 
     protected Location getLastKnowLocation() {
-        mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        startIntentService();
+        Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        if (location !=null)
+            mCurrentLocation = location;
         return mCurrentLocation;
     }
 
@@ -271,8 +300,18 @@ public class MainActivity extends ActionBarActivity implements
         @Override
         public void onResponse(JSONArray response) {
             StoryItem[] jsonStory = new Gson().fromJson(response.toString(), StoryItem[].class);
-            setFetchedStories(new ArrayList<>(Arrays.asList(jsonStory)));
-            updateUI();
+            ArrayList stories = new ArrayList<>(Arrays.asList(jsonStory));
+            setFetchedStories(stories);
+            if (storyMapFragment.askedToFetchStories ) {
+                storyMapFragment.populateMapWithStories(stories);
+                storyMapFragment.askedToFetchStories = false;
+            }
+            if (storyListFragment.askedToFetchStories ) {
+                storyListFragment.updateStoryListAdapter(stories, getMapCurrentFocusLocation());
+                storyListFragment.askedToFetchStories = false;
+            }
+
+
         }
     }
 
@@ -280,16 +319,6 @@ public class MainActivity extends ActionBarActivity implements
         @Override
         public void onErrorResponse(VolleyError error) {
             // TODO Make an error handler
-        }
-    }
-
-    private void updateUI() {
-        //TODO updateStoryMap() and execute for the open fragment: findFragmentById()
-        storyListFragment.updateStoryListAdapter(getFetchedStories(),getLastKnowLocation());
-        //storyMapFragment.populateMapWithStories(getFetchedStories());
-        if (storyMapFragment.askedToFetchStories) {
-            storyMapFragment.populateMapWithStories(getFetchedStories());
-            storyMapFragment.askedToFetchStories = false;
         }
     }
 
@@ -322,6 +351,18 @@ public class MainActivity extends ActionBarActivity implements
             // Display the address string or an error message sent from the intent service.
             mAddressOutput = resultData.getString(Constants.RESULT_DATA_KEY);
             //displayAddressOutput();
+            TextView locationAddressText = (TextView) findViewById(R.id.current_address_text);
+            if (locationAddressText != null) {
+                if (mAddressOutput.equals(""))
+                    locationAddressText.setText("the desert? The ocean? Nowhere? Where is this?");
+                else
+                    locationAddressText.setText(buildAddress(mAddressOutput));
+            }
+
+            if (isStartNewStoryActivityAfterAddressReceived()) {
+                startNewStoryActivityAfterAddressReceived(false);
+                startNewStoryActivity();
+            }
 
             // Show a toast message if an address was found.
             if (resultCode == Constants.SUCCESS_RESULT) {
@@ -351,7 +392,9 @@ public class MainActivity extends ActionBarActivity implements
         intent.putExtra(Constants.RECEIVER, mResultReceiver);
 
         // Pass the location data as an extra to the service.
-        intent.putExtra(Constants.LOCATION_DATA_EXTRA, mCurrentLocation);
+        //intent.putExtra(Constants.LOCATION_DATA_EXTRA, mCurrentLocation);
+        intent.putExtra(Constants.LOCATION_DATA_EXTRA + "_latitude", mFocusLocation.latitude);
+        intent.putExtra(Constants.LOCATION_DATA_EXTRA+ "_longitude", mFocusLocation.longitude);
 
         // Start the service. If the service isn't already running, it is instantiated and started
         // (creating a process for it if needed); if it is running then it remains running. The
@@ -359,27 +402,33 @@ public class MainActivity extends ActionBarActivity implements
         startService(intent);
     }
 
-    /**
-     * Runs when a JsonArrayRequest object successfully gets an response.
-     */
-    class UserResponseListener implements Response.Listener<JSONObject>{
-        private Context context;
-        public UserResponseListener(Context ctx) {context = ctx;}
+    private void inflateStoryMapFragment() {
 
-        @Override
-        public void onResponse(JSONObject response) {
-
-//            userInfo = new Gson().fromJson(response.toString(), User.class);
-            Toast.makeText(getParent(), "Yeah! Successefully got user.", Toast.LENGTH_LONG).show();
-        }
+        getSupportFragmentManager().beginTransaction().add(R.id.fragment_container,storyMapFragment).commit();
     }
 
-    class UserErrorListener implements Response.ErrorListener{
-        @Override
-        public void onErrorResponse(VolleyError error) {
-            // TODO Make an error handler
-//            userInfo = new User("","","","","");
-            Toast.makeText(getParent(), "Nooo! Couldn't get user.", Toast.LENGTH_LONG).show();
-        }
+    private void setMapCurrentFocusLocation() {
+        mFocusLocation = storyMapFragment.getMapFocusLocation();
+    }
+
+    private void setCurrentFocusedAddress() {
+        startIntentService();
+    }
+
+    public LatLng getMapCurrentFocusLocation() {
+        return mFocusLocation;
+    }
+
+    public String buildAddress(String address) {
+        String[] adcomp = address.split("\n");
+        if (adcomp.length == 1)
+            return adcomp[0] + ".";
+        else if (adcomp.length == 2)
+            return adcomp[0] + ", " + adcomp[1] + "." ;
+        else if (adcomp.length == 3)
+            return adcomp[0] + ", " + adcomp[1] + ", " + adcomp[2] + "." ;
+        else
+            return address;
+
     }
 }

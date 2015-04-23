@@ -55,16 +55,18 @@ public class FetchAddressIntentService extends IntentService {
         }
 
         // Get the location passed to this service through an extra.
-        android.location.Location location = intent.getParcelableExtra(Constants.LOCATION_DATA_EXTRA);
+        //android.location.Location location = intent.getParcelableExtra(Constants.LOCATION_DATA_EXTRA);
+        double latitude = intent.getDoubleExtra(Constants.LOCATION_DATA_EXTRA + "_latitude",0);
+        double longitude = intent.getDoubleExtra(Constants.LOCATION_DATA_EXTRA + "_longitude",0);
 
         // Make sure that the location data was really sent over through an extra. If it wasn't,
         // send an error error message and return.
-        if (location == null) {
+        /*if (location == null) {
             errorMessage = getString(R.string.no_location_data_provided);
             Log.wtf(TAG, errorMessage);
             deliverResultToReceiver(Constants.FAILURE_RESULT, errorMessage);
             return;
-        }
+        }*/
 
         // Errors could still arise from using the Geocoder (for example, if there is no
         // connectivity, or if the Geocoder is given illegal location data). Or, the Geocoder may
@@ -85,9 +87,9 @@ public class FetchAddressIntentService extends IntentService {
             // Using getFromLocation() returns an array of Addresses for the area immediately
             // surrounding the given latitude and longitude. The results are a best guess and are
             // not guaranteed to be accurate.
-            addresses = geocoder.getFromLocation(
-                    location.getLatitude(),
-                    location.getLongitude(),
+            addresses = geocoder.getFromLocation(latitude,longitude,
+//                    location.getLatitude(),
+//                    location.getLongitude(),
                     // In this sample, we get just a single address.
                     1);
         } catch (IOException ioException) {

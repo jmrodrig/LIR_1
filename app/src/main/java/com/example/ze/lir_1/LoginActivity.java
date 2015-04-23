@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -125,6 +126,15 @@ public class LoginActivity extends Activity
             }
         });
 
+        findViewById(R.id.sign_up_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://lostinreality.net/signup"));
+                startActivity(browserIntent);
+            }
+        });
+
+
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
@@ -173,7 +183,7 @@ public class LoginActivity extends Activity
             // perform the user login attempt.
             showProgress(true);
 
-            signIn("jose@lostinreality.net","dc3mcdou");
+            signIn(email,password);
         }
     }
 
@@ -356,8 +366,16 @@ public class LoginActivity extends Activity
 
     private void loadMainActivity() {
         Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(intent);
+        finish();
     }
+
+
+
+
+
+
 
 }
 

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">LIR_1</string>
+    <string name="app_name">LIR</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_menu_drawer">menu_drawer</string>

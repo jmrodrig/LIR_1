@@ -23,13 +23,17 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/logo_100x100"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
             android:name=".MainActivity"
-            android:label="@string/app_name"
+            android:label="LIR  stories around you"
+            android:icon="@drawable/logo_100x100"
             android:screenOrientation="portrait">
+            <intent-filter>
+                <category android:name="android.intent.category.HOME" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".menu_drawer"

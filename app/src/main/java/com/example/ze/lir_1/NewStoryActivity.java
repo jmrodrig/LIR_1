@@ -86,11 +86,16 @@ public class NewStoryActivity extends ActionBarActivity {
     private String mWebAddress = "";
     private String mStoryImagePath = "";
 
+    private RequestQueue queue;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_story);
+
+        queue = RequestsSingleton.getInstance(this.getApplicationContext()).getRequestQueue();
+
 
         mSessionUser = SessionUser.getInstance();
         mImageLoader = RequestsSingleton.getInstance(this).getImageLoader();
@@ -130,6 +135,26 @@ public class NewStoryActivity extends ActionBarActivity {
                 mImageLayout.setVisibility(View.VISIBLE);
             }
         });
+
+//        findViewById(R.id.create_story_button).setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                // Send story data, recebe o story Id e manda a imagem
+//                //sendStoryData();
+//
+//
+//
+//
+////                //new SendStoryImageTask().execute();
+////                File imageFile = new File(mStoryImagePath);
+////                FileBody fileBody = new FileBody(imageFile);
+////                String url = "http://lostinreality.net/story/" + storyId + "/uploadimage";
+////
+////
+////                MultipartRequest multipartRequest = new MultipartRequest(url, "file", fileBody, new SendFileSuccess(this), new SendFileError(this));
+////                queue.add(multipartRequest);
+//            }
+//        });
 
         mStoryText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -400,20 +425,6 @@ public class NewStoryActivity extends ActionBarActivity {
                 mStoryPicture.setImageBitmap(BitmapFactory
                         .decodeFile(mStoryImagePath));
 
-
-                //new SendStoryImageTask().execute();
-                File imageFile = new File(mStoryImagePath);
-                FileBody fileBody = new FileBody(imageFile);
-                String fileName = imageFile.getName();
-                String url = "http://lostinreality.net/story/24/post/39/uploadimage";
-                HashMap<String, String> params = new HashMap<String, String>();
-
-                RequestQueue queue = RequestsSingleton.getInstance(this.getApplicationContext()).getRequestQueue();
-
-                MultipartRequest multipartRequest = new MultipartRequest(url, "s", fileBody, new SendFileSuccess(this), new SendFileError(this));
-                queue.add(multipartRequest);
-
-
             } else {
                 Toast.makeText(this, "You haven't picked Image",
                         Toast.LENGTH_LONG).show();
@@ -458,7 +469,22 @@ public class NewStoryActivity extends ActionBarActivity {
 
     public String getLocationAddress() {
         String address = getIntent().getExtras().getString("location_address");
-        return address.split("\n", 2)[0] + ", " + address.split("\n", 2)[1];
+        if (address.equals(""))
+            return "the desert? The ocean? Nowhere? Where is this?";
+        return buildAddress(address);
+    }
+
+    public String buildAddress(String address) {
+        String[] adcomp = address.split("\n");
+        if (adcomp.length == 1)
+            return adcomp[0] + ".";
+        else if (adcomp.length == 2)
+            return adcomp[0] + ", " + adcomp[1] + "." ;
+        else if (adcomp.length == 3)
+            return adcomp[0] + ", " + adcomp[1] + ", " + adcomp[2] + "." ;
+        else
+            return address;
+
     }
 
 }

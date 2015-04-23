@@ -2,7 +2,11 @@
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
+    </style>
+
+    <style name="MainActivityLogo" parent="@style/Widget.AppCompat.Light.ActionBar">
+        <item name="android:icon">@drawable/logo_100x100</item>
+        <item name="displayOptions">useLogo|showHome</item>
     </style>
 
 </resources>
