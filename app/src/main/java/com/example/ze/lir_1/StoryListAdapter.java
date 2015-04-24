@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.android.volley.toolbox.ImageLoader;
@@ -19,11 +20,13 @@ public class StoryListAdapter extends BaseAdapter {
     private ImageLoader.ImageCache imageCache;
     private ImageLoader loader;
     private ArrayList<StoryItem> stories = new ArrayList<StoryItem>();
-    private Context context;
+    private Context appContext;
+    private StoryListFragment parentObj;
 
-    public StoryListAdapter(Context ctxt ) {
-        context = ctxt;
-        loader = RequestsSingleton.getInstance(context.getApplicationContext()).getImageLoader();
+    public StoryListAdapter(Context Appctxt, StoryListFragment parent ) {
+        appContext = Appctxt;
+        parentObj = parent;
+        loader = RequestsSingleton.getInstance(appContext.getApplicationContext()).getImageLoader();
     }
 
     public void setStoryList(ArrayList<StoryItem> storyList) {
@@ -43,9 +46,9 @@ public class StoryListAdapter extends BaseAdapter {
         return position;
     }
 
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent) {
 
-        LayoutInflater inflater = (LayoutInflater) context.getSystemService( Context.LAYOUT_INFLATER_SERVICE );
+        LayoutInflater inflater = (LayoutInflater) appContext.getSystemService( Context.LAYOUT_INFLATER_SERVICE );
         View row = convertView;
         if (row == null) {
             row = inflater.inflate(R.layout.story_row, null, false);
@@ -54,7 +57,7 @@ public class StoryListAdapter extends BaseAdapter {
             holder.storyTextTextView = (TextView) row.findViewById(R.id.story_text);
             holder.storyImageView = (NetworkImageView) row.findViewById(R.id.story_thumbnail);
             holder.userImageView = (NetworkImageView) row.findViewById(R.id.user_image);
-
+            holder.deleteStoryButton = (Button) row.findViewById(R.id.delete_story_button);
             row.setTag(holder);
         }
 
@@ -68,6 +71,17 @@ public class StoryListAdapter extends BaseAdapter {
         if (userImg.equals("")) {
             holder.userImageView.setImageResource(R.drawable.placeholder_user);
         }
+        holder.deleteStoryButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                parentObj.deleteStory(getItem(position).getStoryId());
+            }
+        });
+        if (isUserOwnerOfStory(getItem(position)))
+            holder.deleteStoryButton.setVisibility(View.VISIBLE);
+        else
+            holder.deleteStoryButton.setVisibility(View.GONE);
+
 
         return (row);
     }
@@ -75,6 +89,15 @@ public class StoryListAdapter extends BaseAdapter {
     static class ViewHolder{
         TextView userNameTextView, storyTextTextView;
         NetworkImageView storyImageView, userImageView;
+        Button deleteStoryButton;
+    }
+
+    private Boolean isUserOwnerOfStory(StoryItem st) {
+        String userId = SessionUser.getInstance().getUserEmail();
+        if (userId.equals(st.getAuthor().getAuthorId()))
+            return true;
+        else
+            return false;
     }
 }
 

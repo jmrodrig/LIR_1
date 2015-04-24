@@ -9,5 +9,8 @@ public class Location {
     public Double longitude;
     public Double radius;
 
-    public Location() { }
+    public Location(Double lat,Double lng) {
+        this.latitude = lat;
+        this.longitude = lng;
+    }
 }

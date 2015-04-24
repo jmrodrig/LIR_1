@@ -16,6 +16,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.ResultReceiver;
 import android.provider.MediaStore;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBarActivity;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -39,14 +40,18 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.NetworkImageView;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
@@ -64,7 +69,9 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 import ch.boye.httpclientandroidlib.entity.mime.content.FileBody;
@@ -81,9 +88,11 @@ public class NewStoryActivity extends ActionBarActivity {
     private LinearLayout mArticleLayout;
     private FrameLayout mImageLayout;
     private ImageView mStoryPicture;
+    private EditText mStoryText;
     private Boolean updatingArticleInfo = false;
+    private ArrayList<String> mArticleInfo = new ArrayList<>();
 
-    private String mWebAddress = "";
+    private String mArticleWebAddress = "";
     private String mStoryImagePath = "";
 
     private RequestQueue queue;
@@ -106,7 +115,7 @@ public class NewStoryActivity extends ActionBarActivity {
         TextView mLocationText = (TextView) findViewById(R.id.story_location);
         mLocationText.setText(mSessionUser.getUserFullName() + " at " + getLocationAddress());
 
-        EditText mStoryText = (EditText) findViewById(R.id.story_text);
+        mStoryText = (EditText) findViewById(R.id.story_text);
         mArticleProgressBar = (ProgressBar) findViewById(R.id.article_process_progress);
         mArticleLayout = (LinearLayout) findViewById(R.id.article_layout);
         mImageLayout = (FrameLayout) findViewById(R.id.image_layout);
@@ -115,8 +124,8 @@ public class NewStoryActivity extends ActionBarActivity {
         mImageLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(i, RESULT_LOAD_IMAGE);
+            Intent i = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            startActivityForResult(i, RESULT_LOAD_IMAGE);
             }
         });
 
@@ -136,25 +145,14 @@ public class NewStoryActivity extends ActionBarActivity {
             }
         });
 
-//        findViewById(R.id.create_story_button).setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                // Send story data, recebe o story Id e manda a imagem
-//                //sendStoryData();
-//
-//
-//
-//
-////                //new SendStoryImageTask().execute();
-////                File imageFile = new File(mStoryImagePath);
-////                FileBody fileBody = new FileBody(imageFile);
-////                String url = "http://lostinreality.net/story/" + storyId + "/uploadimage";
-////
-////
-////                MultipartRequest multipartRequest = new MultipartRequest(url, "file", fileBody, new SendFileSuccess(this), new SendFileError(this));
-////                queue.add(multipartRequest);
-//            }
-//        });
+        findViewById(R.id.submit_story_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Send story data, recebe o story Id e manda a imagem
+                JSONObject storyData = collectStoryDataJSON();
+                submitStoryDataToServer(storyData);
+            }
+        });
 
         mStoryText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -204,6 +202,18 @@ public class NewStoryActivity extends ActionBarActivity {
         //TODO OPTIONAL Get address
     } // END OF onCreate()
 
+    private void submitStoryDataToServer(JSONObject storyData) {
+        String url = "http://lostinreality.net/story";
+        if (storyData!=null) {
+            JsonObjectRequest submitStoryDataRequest = new JsonObjectRequest(Request.Method.POST,
+                    url,
+                    storyData,
+                    new SubmitStorySuccess(this),
+                    new SubmitStoryError(this));
+            queue.add(submitStoryDataRequest);
+        }
+    }
+
 
     public String grabWebpageAddress(String text, String regex) {
         mArticleProgressBar.setVisibility(View.VISIBLE);
@@ -233,6 +243,7 @@ public class NewStoryActivity extends ActionBarActivity {
         @Override
         protected void onPostExecute(ArrayList<String> result) {
             mArticleProgressBar.setVisibility(View.GONE);
+            mArticleInfo.clear();
 
             if (result == null || result.get(0).equals("") || result.get(1).equals("")) {
                 mImageLayout.setVisibility(View.VISIBLE);
@@ -251,6 +262,10 @@ public class NewStoryActivity extends ActionBarActivity {
             mArticleText.setText(result.get(0));
             mArticleHost.setText(result.get(3));
             mArticleImage.setImageUrl(result.get(2), mImageLoader);
+
+            for (String artItem : result) {
+                mArticleInfo.add(artItem);
+            }
 
             if (result.get(2).equals("")) {
                 mArticleImagePictureFrame.setVisibility(View.GONE);
@@ -380,11 +395,11 @@ public class NewStoryActivity extends ActionBarActivity {
     }
 
     private synchronized String getWebAddress() {
-        return mWebAddress;
+        return mArticleWebAddress;
     }
 
     private synchronized void setWebAddress(String adrss) {
-        mWebAddress = adrss;
+        mArticleWebAddress = adrss;
     }
 
 
@@ -441,16 +456,24 @@ public class NewStoryActivity extends ActionBarActivity {
      */
     class SendFileSuccess implements Response.Listener<String> {
         private Context context;
+        private Integer storyId;
 
-        public SendFileSuccess(Context ctx) {
+        public SendFileSuccess(Context ctx, Integer id) {
             context = ctx;
+            storyId = id;
         }
 
         @Override
         public void onResponse(String response) {
-            Toast.makeText(context, "image uploaded!",
-                    Toast.LENGTH_LONG).show();
+            publishStory(storyId);
+            Toast.makeText(context, "image uploaded!",Toast.LENGTH_LONG).show();
         }
+    }
+
+    private void publishStory(Integer storyId) {
+        String url = "http://lostinreality.net/story/" + storyId + "/publish/1";
+        StringRequest publishRequest = new StringRequest(Request.Method.POST,url, new PublishSuccess(this), new PublishError(this));
+        queue.add(publishRequest);
     }
 
     class SendFileError implements Response.ErrorListener {
@@ -485,6 +508,116 @@ public class NewStoryActivity extends ActionBarActivity {
         else
             return address;
 
+    }
+
+    private JSONObject collectStoryDataJSON() {
+
+        Date date = new Date();
+        StoryItem storyItem = new StoryItem();
+        storyItem.setStoryTitle("Story_" + String.valueOf(new Timestamp(date.getTime())));
+        storyItem.setStoryText(mStoryText.getText().toString());
+        Double lat = getIntent().getExtras().getDouble(Constants.LOCATION_DATA_EXTRA + "_latitude");
+        Double lng = getIntent().getExtras().getDouble(Constants.LOCATION_DATA_EXTRA + "_longitude");
+        storyItem.setStoryLocation(lat, lng);
+        storyItem.setAddress(getLocationAddress());
+        if (!mArticleInfo.isEmpty()) {
+            storyItem.setArticleTitle(mArticleInfo.get(1));
+            storyItem.setArticleDescription(mArticleInfo.get(0));
+            storyItem.setArticleImage(mArticleInfo.get(2));
+            storyItem.setArticleLink(mArticleWebAddress);
+        }
+
+        String jsonStoryString = new Gson().toJson(storyItem);
+        JSONObject jsonStoryObj = null;
+        try {
+            jsonStoryObj = new JSONObject(jsonStoryString);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return jsonStoryObj;
+    }
+
+    /**
+     * Runs when a JsonArrayRequest object successfully gets an response.
+     */
+    class SubmitStorySuccess implements Response.Listener<JSONObject> {
+        private Context context;
+
+        public SubmitStorySuccess(Context ctx) {
+            context = ctx;
+        }
+
+        @Override
+        public void onResponse(JSONObject response) {
+            StoryItem jsonStory = new Gson().fromJson(response.toString(), StoryItem.class);
+            Integer storyId = jsonStory.getStoryId();
+            if (!mStoryImagePath.equals(""))
+                sendImageFile(storyId);
+            else
+                publishStory(storyId);
+            Toast.makeText(context, "Story saved!",Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void sendImageFile(Integer storyId) {
+        if (mStoryImagePath.equals(""))
+            return;
+        File imageFile = new File(mStoryImagePath);
+        FileBody fileBody = new FileBody(imageFile);
+        String url = "http://lostinreality.net/story/" + storyId + "/uploadimage";
+        MultipartRequest multipartRequest = new MultipartRequest(url, "file", fileBody, new SendFileSuccess(this,storyId), new SendFileError(this));
+        queue.add(multipartRequest);
+    }
+
+    class SubmitStoryError implements Response.ErrorListener {
+        private Context context;
+
+        public SubmitStoryError(Context ctx) {
+            context = ctx;
+        }
+
+        @Override
+        public void onErrorResponse(VolleyError error) {
+            // TODO Make an error handler
+            Toast.makeText(context, "Nothing happened!", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * Runs when a JsonArrayRequest object successfully gets an response.
+     */
+    class PublishSuccess implements Response.Listener<String> {
+        private Context context;
+
+        public PublishSuccess(Context ctx) {
+            context = ctx;
+        }
+
+        @Override
+        public void onResponse(String response) {
+            Toast.makeText(context, "Story is published!",Toast.LENGTH_LONG).show();
+            leaveActivityAndReloadStories();
+        }
+    }
+
+
+    class PublishError implements Response.ErrorListener {
+        private Context context;
+
+        public PublishError(Context ctx) {
+            context = ctx;
+        }
+
+        @Override
+        public void onErrorResponse(VolleyError error) {
+            // TODO Make an error handler
+            Toast.makeText(context, "Nothing happened!", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void leaveActivityAndReloadStories() {
+        NavUtils.navigateUpFromSameTask(this);
     }
 
 }

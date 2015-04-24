@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.location.Geocoder;
 import android.location.Location;
 
+import android.net.Uri;
 import android.os.Handler;
 import android.os.ResultReceiver;
 import android.support.v4.app.FragmentTransaction;
@@ -104,7 +105,6 @@ public class MainActivity extends ActionBarActivity implements
         String url ="http://lostinreality.net/publishedstories";
 
         fetchStoriesRequest = new JsonArrayRequest(Request.Method.GET, url, null, new ResponseListener(), new ErrorListener());
-        fetchStories();
 
         storyMapFragment = new StoryMapFragment();
         storyListFragment = new StoryListFragment();
@@ -119,6 +119,9 @@ public class MainActivity extends ActionBarActivity implements
             public void onClick(View v) {
                 // TODO do nothing if already open
                 // TODO save state
+
+                if (findViewById(R.id.map_container) != null)
+                    return;
 
                 // Create an instance of StoryMapFragment
                 if (storyMapFragment ==null)
@@ -135,6 +138,9 @@ public class MainActivity extends ActionBarActivity implements
             public void onClick(View v) {
                 // TODO do nothing if already open
                 // TODO save state
+                if (findViewById(R.id.story_container) != null)
+                    return;
+
                 if(storyListFragment == null )
                     storyListFragment = new StoryListFragment();
 
@@ -158,6 +164,13 @@ public class MainActivity extends ActionBarActivity implements
         buildGoogleApiClient();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        storyMapFragment.populateMapWithStoriesAfterFetched();
+        fetchStories();
+    }
+
     private void loadNewStoryActivity() {
         startNewStoryActivityAfterAddressReceived(true);
         setMapCurrentFocusLocation();
@@ -175,6 +188,8 @@ public class MainActivity extends ActionBarActivity implements
     private void startNewStoryActivity() {
         Intent intent = new Intent(this,NewStoryActivity.class);
         intent.putExtra("location_address",mAddressOutput);
+        intent.putExtra(Constants.LOCATION_DATA_EXTRA + "_latitude", mFocusLocation.latitude);
+        intent.putExtra(Constants.LOCATION_DATA_EXTRA+ "_longitude", mFocusLocation.longitude);
         startActivity(intent);
     }
 
@@ -286,6 +301,7 @@ public class MainActivity extends ActionBarActivity implements
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            sendEmailIntent();
             return true;
         }
 
@@ -305,10 +321,12 @@ public class MainActivity extends ActionBarActivity implements
             if (storyMapFragment.askedToFetchStories ) {
                 storyMapFragment.populateMapWithStories(stories);
                 storyMapFragment.askedToFetchStories = false;
+                storyMapFragment.updateStoriesCount();
             }
             if (storyListFragment.askedToFetchStories ) {
                 storyListFragment.updateStoryListAdapter(stories, getMapCurrentFocusLocation());
                 storyListFragment.askedToFetchStories = false;
+                storyMapFragment.updateStoriesCount();
             }
 
 
@@ -403,7 +421,6 @@ public class MainActivity extends ActionBarActivity implements
     }
 
     private void inflateStoryMapFragment() {
-
         getSupportFragmentManager().beginTransaction().add(R.id.fragment_container,storyMapFragment).commit();
     }
 
@@ -430,5 +447,12 @@ public class MainActivity extends ActionBarActivity implements
         else
             return address;
 
+    }
+
+    private void sendEmailIntent() {
+        Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
+                "mailto", "ideas@lostinreality.net", null));
+        intent.putExtra(Intent.EXTRA_SUBJECT, "User feedback");
+        startActivity(Intent.createChooser(intent, "Send Email"));
     }
 }

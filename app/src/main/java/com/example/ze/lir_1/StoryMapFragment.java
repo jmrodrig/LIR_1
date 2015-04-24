@@ -41,13 +41,17 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     public Boolean askedToFetchStories = false;
+    private SupportMapFragment mapFragment;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        if (mapFragment == null) {
+            mapFragment = SupportMapFragment.newInstance();
+        }
+
         FragmentManager fm = getChildFragmentManager();
-        SupportMapFragment mapFragment = SupportMapFragment.newInstance();
         fm.beginTransaction().replace(R.id.map_container, mapFragment).commit();
         mapFragment.getMapAsync(this);
 
@@ -59,34 +63,47 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady(GoogleMap map) {
-        mMap = map;
-        map.setMyLocationEnabled(true);
+        if (mMap==null) {
+            mMap = map;
+            map.setMyLocationEnabled(true);
+            updateCurrentPosition(((MainActivity) getActivity()).getLastKnowLocation());
+        }
         map.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
             @Override
             public void onCameraChange(CameraPosition cameraPosition) {
-                //TODO
-                Button storyListButton = (Button) getActivity().findViewById(R.id.story_list_button);
-                ArrayList<StoryItem> stories = ((MainActivity) getActivity()).getFetchedStories();
-                if (stories != null) {
-                    Integer storyCount = countStoriesAround(stories, cameraPosition.target, 500);
-                    storyListButton.setText("LIST (" + storyCount + ")");
-                }
+        updateStoriesCount();
             }
         });
-        //TODO Get storyList from Cache
-        updateCurrentPosition(((MainActivity) getActivity()).getLastKnowLocation());
-        //((MainActivity) getActivity()).fetchStories();
-        ArrayList<StoryItem> stories = ((MainActivity) getActivity()).getFetchedStories();
-        if (stories != null)
-            populateMapWithStories( stories );
-        else {
-            ((MainActivity) getActivity()).fetchStories();
-            populateMapWithStoriesAfterFetched();
-        }
 
+        //TODO Get storyList from Cache
+        //((MainActivity) getActivity()).fetchStories();
+        //ArrayList<StoryItem> stories = ((MainActivity) getActivity()).getFetchedStories();
+        ((MainActivity) getActivity()).fetchStories();
+        populateMapWithStoriesAfterFetched();
+//        if (stories != null)
+//            populateMapWithStories( stories );
+//        else {
+//            ((MainActivity) getActivity()).fetchStories();
+//            populateMapWithStoriesAfterFetched();
+//        }
+    }
+
+    public void updateStoriesCount() {
+        if (mMap==null)
+            return;
+
+        Button storyListButton = (Button) getActivity().findViewById(R.id.story_list_button);
+        ArrayList<StoryItem> stories = ((MainActivity) getActivity()).getFetchedStories();
+        if (stories != null) {
+            Integer storyCount = countStoriesAround(stories, mMap.getCameraPosition().target, 500);
+            storyListButton.setText("LIST (" + storyCount + ")");
+        }
     }
 
     public void updateCurrentPosition(android.location.Location location) {
+        if (mMap==null)
+            return;
+
         if (location != null) {
             LatLng latlng = new LatLng(location.getLatitude(), location.getLongitude());
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 15));
@@ -94,7 +111,9 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void populateMapWithStories(ArrayList<StoryItem> stories) {
-
+        if (mMap==null)
+            return;
+        mMap.clear();
         for (Integer i = 0; i < stories.size(); i++) {
             StoryItem si = stories.get(i);
             Location location = si.getStoryLocation();

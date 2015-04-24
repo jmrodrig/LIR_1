@@ -1,5 +1,6 @@
 package com.example.ze.lir_1;
 
+import android.content.Context;
 import android.location.*;
 import android.location.Location;
 import android.support.v4.app.Fragment;
@@ -9,12 +10,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 
@@ -38,7 +41,7 @@ public class StoryListFragment extends Fragment  {
         super.onCreate(savedInstanceState);
         askedToFetchStories = false;
 
-        storyListAdapter = new StoryListAdapter(getActivity());
+        storyListAdapter = new StoryListAdapter(getActivity(),this);
         return inflater.inflate(R.layout.story_list_fragment, container, false);
     }
 
@@ -135,5 +138,45 @@ public class StoryListFragment extends Fragment  {
                 storiesAround.add(st);
         }
         return storiesAround;
+    }
+
+    public void deleteStory(Integer storyId) {
+        RequestQueue queue = RequestsSingleton.getInstance(getActivity()).getRequestQueue();
+        String url = "http://lostinreality.net/story/" + storyId + "/publish/0";
+        StringRequest deleteRequest = new StringRequest(Request.Method.POST,url, new DeleteSuccess(getActivity()), new DeleteError(getActivity()));
+        queue.add(deleteRequest);
+    }
+
+    /**
+     * Runs when a JsonArrayRequest object successfully gets an response.
+     */
+    class DeleteSuccess implements Response.Listener<String> {
+        private Context context;
+
+        public DeleteSuccess(Context ctx) {
+            context = ctx;
+        }
+
+        @Override
+        public void onResponse(String response) {
+            Toast.makeText(context, "Story was unpublished!", Toast.LENGTH_LONG).show();
+            ((MainActivity) getActivity()).fetchStories();
+            updateStoryListAdapterAfterFetched();
+        }
+    }
+
+
+    class DeleteError implements Response.ErrorListener {
+        private Context context;
+
+        public DeleteError(Context ctx) {
+            context = ctx;
+        }
+
+        @Override
+        public void onErrorResponse(VolleyError error) {
+            // TODO Make an error handler
+            Toast.makeText(context, "Ups! There was an error...", Toast.LENGTH_LONG).show();
+        }
     }
 }

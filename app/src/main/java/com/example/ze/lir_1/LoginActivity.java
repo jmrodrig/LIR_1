@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -148,9 +149,13 @@ public class LoginActivity extends Activity
         mEmailView.setError(null);
         mPasswordView.setError(null);
 
+
+
         // Store values at the time of the login attempt.
         String email = mEmailView.getText().toString();
         String password = mPasswordView.getText().toString();
+
+        saveLoginCredentials(email,password);
 
         boolean cancel = false;
         View focusView = null;
@@ -246,6 +251,10 @@ public class LoginActivity extends Activity
     protected void onStart() {
         super.onStart();
         //mGoogleApiClient.connect();
+
+        String[] cred = getSavedLoginCredentials();
+        mEmailView.setText(cred[0]);
+        mPasswordView.setText(cred[1]);
     }
 
     protected void onStop() {
@@ -371,7 +380,23 @@ public class LoginActivity extends Activity
         finish();
     }
 
+    private void saveLoginCredentials(String email, String password) {
+        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString("username", email);
+        editor.putString("password", password);
+        editor.commit();
+    }
 
+    private String[] getSavedLoginCredentials(){
+        String[] cred = new String[2];
+        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+
+        cred[0] = sharedPref.getString("username","");
+        cred[1] = sharedPref.getString("password","");
+
+        return cred;
+    }
 
 
 

@@ -29,12 +29,6 @@
             android:paddingLeft="7dp" />
     </LinearLayout>
 
-    <com.android.volley.toolbox.NetworkImageView
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/story_thumbnail"
-        android:layout_marginTop="10dp" />
-
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -42,4 +36,22 @@
         android:text="Medium Text"
         android:id="@+id/story_text"
         android:paddingTop="10dp" />
+
+    <com.android.volley.toolbox.NetworkImageView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/story_thumbnail"
+        android:layout_marginTop="10dp" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="delete"
+            android:id="@+id/delete_story_button" />
+    </LinearLayout>
 </LinearLayout>

@@ -30,6 +30,7 @@
             android:name=".MainActivity"
             android:label="LIR  stories around you"
             android:icon="@drawable/logo_100x100"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait">
             <intent-filter>
                 <category android:name="android.intent.category.HOME" />
@@ -69,8 +70,7 @@
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
             android:value="AIzaSyAALcWEPuzO2G2IgGRq759ohtkb1bzhA7M" />
-        <!-- android:value="AIzaSyBgyneakFpj20e8VC5tzejOC3ZYk9uZXfA"/> -->
-
+        <!--android:value="AIzaSyBSNvXqcwwXXTORYoS-2CJ-aPaXspsKwdU"/> release key-->
         <service
             android:name=".FetchAddressIntentService"
             android:exported="false"/>

@@ -13,9 +13,16 @@ public class Author {
     public String getFullName() {
         return fullName;
     }
+
+    public String getAuthorId() {
+        return email;
+    }
+
     public String getAvatarUrl() {
         if (avatarUrl == null)
             return "http://lostinreality.net/assets/images/lir-logo.png";
         return avatarUrl;
     }
+
+
 }
