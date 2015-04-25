@@ -40,7 +40,16 @@
         android:id="@+id/sight_image"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
-        android:src="@drawable/map_sight_white"
+        android:src="@drawable/map_sight_blue_area"
+        android:layout_gravity="center"
+        android:scaleType="fitXY"
+        android:alpha="3" />
+
+    <ImageView
+        android:layout_width="7dp"
+        android:layout_height="7dp"
+        android:id="@+id/sight_image_dot"
+        android:src="@drawable/map_sight_blue_dot"
         android:layout_gravity="center" />
 
 

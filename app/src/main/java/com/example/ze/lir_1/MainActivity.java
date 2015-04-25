@@ -374,7 +374,7 @@ public class MainActivity extends ActionBarActivity implements
                 if (mAddressOutput.equals(""))
                     locationAddressText.setText("the desert? The ocean? Nowhere? Where is this?");
                 else
-                    locationAddressText.setText(buildAddress(mAddressOutput));
+                    locationAddressText.setText("Stories around " +buildAddress(mAddressOutput));
             }
 
             if (isStartNewStoryActivityAfterAddressReceived()) {

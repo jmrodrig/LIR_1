@@ -90,6 +90,10 @@ public class StoryItem {
         return author;
     }
 
+    public  String getArticleHost() {
+        return getArticleLink().split("/")[2];
+    }
+
 
     //setters
     public void setStoryId(Integer id) { this.id = id; }

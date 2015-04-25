@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -33,6 +34,7 @@ import org.json.JSONArray;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by Ze on 13/04/2015.
@@ -42,6 +44,7 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap mMap;
     public Boolean askedToFetchStories = false;
     private SupportMapFragment mapFragment;
+    private ImageView mapUserSight;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -71,21 +74,27 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
         map.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
             @Override
             public void onCameraChange(CameraPosition cameraPosition) {
-        updateStoriesCount();
+                updateStoriesCount();
+                updateSightArea(cameraPosition.zoom);
             }
         });
 
-        //TODO Get storyList from Cache
-        //((MainActivity) getActivity()).fetchStories();
-        //ArrayList<StoryItem> stories = ((MainActivity) getActivity()).getFetchedStories();
         ((MainActivity) getActivity()).fetchStories();
         populateMapWithStoriesAfterFetched();
-//        if (stories != null)
-//            populateMapWithStories( stories );
-//        else {
-//            ((MainActivity) getActivity()).fetchStories();
-//            populateMapWithStoriesAfterFetched();
-//        }
+
+        mapUserSight = (ImageView) getActivity().findViewById(R.id.sight_image);
+        updateSightArea(map.getCameraPosition().zoom);
+    }
+
+    private void updateSightArea(float zoom) {
+        float scale = (float) Math.pow(2,zoom-15);
+        mapUserSight.setScaleX(scale);
+        mapUserSight.setScaleY(scale);
+        //TODO set in values file
+        float maxZoom = 21;
+        float defaultZoom = 15;
+        float alpha = 1+(defaultZoom-zoom)/(maxZoom-defaultZoom);
+        mapUserSight.setAlpha(alpha);
     }
 
     public void updateStoriesCount() {
@@ -95,7 +104,7 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
         Button storyListButton = (Button) getActivity().findViewById(R.id.story_list_button);
         ArrayList<StoryItem> stories = ((MainActivity) getActivity()).getFetchedStories();
         if (stories != null) {
-            Integer storyCount = countStoriesAround(stories, mMap.getCameraPosition().target, 500);
+            Integer storyCount = countStoriesAround(stories, mMap.getCameraPosition().target, 250);
             storyListButton.setText("LIST (" + storyCount + ")");
         }
     }
@@ -118,9 +127,10 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
             StoryItem si = stories.get(i);
             Location location = si.getStoryLocation();
             mMap.addMarker(new MarkerOptions()
-                    .position(new LatLng(location.latitude, location.longitude)));
-                    //TODO add custom icons
-                    //.icon(BitmapDescriptorFactory.fromResource(R.drawable.arrow)));
+                    .position(new LatLng(location.latitude, location.longitude))
+                    .anchor(1/2,1/2)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_custom)));
+
         }
     }
 

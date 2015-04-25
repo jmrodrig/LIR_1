@@ -7,22 +7,46 @@
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:background="#ff323232"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:paddingRight="10dp">
 
         <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="45dp"
+            android:layout_width="35dp"
+            android:layout_height="30dp"
             android:id="@+id/imageView2"
-            android:src="@drawable/pin_black"
-            android:layout_margin="10dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="Medium Text"
-            android:id="@+id/current_address_text"
+            android:src="@drawable/pin_white"
+            android:layout_margin="12dp"
             android:layout_gravity="center_vertical" />
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:text="Stories around"
+                android:id="@+id/textView5"
+                android:textColor="#ffffffff"
+                android:visibility="gone" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="Medium Text"
+                android:id="@+id/current_address_text"
+                android:layout_gravity="center_vertical"
+                android:textColor="#ffffffff"
+                android:textSize="16dp" />
+        </LinearLayout>
+
     </LinearLayout>
 
     <FrameLayout

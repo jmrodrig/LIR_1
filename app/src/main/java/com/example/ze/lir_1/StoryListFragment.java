@@ -101,7 +101,7 @@ public class StoryListFragment extends Fragment  {
         return sortedList;
     }
 
-    private float calculateTwoPointsDistance(LatLng lc1, LatLng lc2) {
+    public float calculateTwoPointsDistance(LatLng lc1, LatLng lc2) {
         float[] results = new float[4];
         Location.distanceBetween(lc1.latitude,lc1.longitude,lc2.latitude,lc2.longitude,results);
         float distance = results[0];
@@ -111,7 +111,7 @@ public class StoryListFragment extends Fragment  {
     public void updateStoryListAdapter(ArrayList storyList, LatLng currentLocation) {
         if (currentLocation != null) {
             //TODO
-            storyList = selectStoriesAround(storyList, currentLocation, 500);
+            storyList = selectStoriesAround(storyList, currentLocation, 250);
             //IF NONE HIDE LIST VIEW AND DISPLAY A BUTTON TO CREATE A STORY
             if (storyList.size() == 0) {
                 storyListView.setVisibility(View.GONE);

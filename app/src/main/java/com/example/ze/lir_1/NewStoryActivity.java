@@ -466,7 +466,7 @@ public class NewStoryActivity extends ActionBarActivity {
         @Override
         public void onResponse(String response) {
             publishStory(storyId);
-            Toast.makeText(context, "image uploaded!",Toast.LENGTH_LONG).show();
+            //Toast.makeText(context, "image uploaded!",Toast.LENGTH_LONG).show();
         }
     }
 
@@ -486,7 +486,7 @@ public class NewStoryActivity extends ActionBarActivity {
         @Override
         public void onErrorResponse(VolleyError error) {
             // TODO Make an error handler
-            Toast.makeText(context, "Nothing happened!", Toast.LENGTH_LONG).show();
+            Toast.makeText(context, "Image upload error!", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -556,7 +556,7 @@ public class NewStoryActivity extends ActionBarActivity {
                 sendImageFile(storyId);
             else
                 publishStory(storyId);
-            Toast.makeText(context, "Story saved!",Toast.LENGTH_LONG).show();
+            //Toast.makeText(context, "Story published!",Toast.LENGTH_LONG).show();
         }
     }
 
