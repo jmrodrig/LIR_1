@@ -47,7 +47,9 @@ public class StoryItem {
     }
 
     public  String getUrlThumbnail() {
-        return "http://lostinreality.net" + thumbnail;
+        if (thumbnail != null && !thumbnail.equals("null"))
+            return "http://lostinreality.net" + thumbnail;
+        return "";
     }
 
     public  Location getStoryLocation() {

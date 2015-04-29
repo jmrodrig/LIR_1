@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -31,6 +32,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.gson.Gson;
 
 import org.json.JSONArray;
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,6 +47,7 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
     public Boolean askedToFetchStories = false;
     private SupportMapFragment mapFragment;
     private ImageView mapUserSight;
+    private TextView storyNumberText;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -58,9 +61,15 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
         fm.beginTransaction().replace(R.id.map_container, mapFragment).commit();
         mapFragment.getMapAsync(this);
 
-
-
         return inflater.inflate(R.layout.story_map_fragment, container, false);
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        storyNumberText = (TextView) getActivity().findViewById(R.id.stories_number_text);
 
     }
 
@@ -101,11 +110,16 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
         if (mMap==null)
             return;
 
-        Button storyListButton = (Button) getActivity().findViewById(R.id.story_list_button);
+
         ArrayList<StoryItem> stories = ((MainActivity) getActivity()).getFetchedStories();
         if (stories != null) {
             Integer storyCount = countStoriesAround(stories, mMap.getCameraPosition().target, 250);
-            storyListButton.setText("LIST (" + storyCount + ")");
+            if (storyCount > 1)
+                storyNumberText.setText("There are " + storyCount + " stories around here.");
+            else if (storyCount == 1)
+                storyNumberText.setText("There is one story around here.");
+            else
+                storyNumberText.setText("No stories around here. Create the first one.");
         }
     }
 
@@ -128,7 +142,7 @@ public class StoryMapFragment extends Fragment implements OnMapReadyCallback {
             Location location = si.getStoryLocation();
             mMap.addMarker(new MarkerOptions()
                     .position(new LatLng(location.latitude, location.longitude))
-                    .anchor(1/2,1/2)
+                    .anchor(0.5f,0.5f)
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker_custom)));
 
         }

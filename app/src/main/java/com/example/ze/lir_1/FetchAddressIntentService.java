@@ -107,7 +107,8 @@ public class FetchAddressIntentService extends IntentService {
         // Handle case where no address was found.
         if (addresses == null || addresses.size()  == 0) {
             if (errorMessage.isEmpty()) {
-                errorMessage = getString(R.string.no_address_found);
+                //errorMessage = getString(R.string.no_address_found);
+                errorMessage = "the desert? The ocean? Nowhere? Where is this";
 //                Log.e(TAG, errorMessage);
             }
             deliverResultToReceiver(Constants.FAILURE_RESULT, errorMessage);

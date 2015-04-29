@@ -55,6 +55,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -203,6 +204,7 @@ public class NewStoryActivity extends ActionBarActivity {
     } // END OF onCreate()
 
     private void submitStoryDataToServer(JSONObject storyData) {
+        Toast.makeText(this, "Publishing story...", Toast.LENGTH_LONG).show();
         String url = "http://lostinreality.net/story";
         if (storyData!=null) {
             JsonObjectRequest submitStoryDataRequest = new JsonObjectRequest(Request.Method.POST,
@@ -437,8 +439,10 @@ public class NewStoryActivity extends ActionBarActivity {
                 mImageLayout.setVisibility(View.VISIBLE);
                 findViewById(R.id.discard_image_button).setVisibility(View.VISIBLE);
                 // Set the Image in ImageView after decoding the String
-                mStoryPicture.setImageBitmap(BitmapFactory
-                        .decodeFile(mStoryImagePath));
+                Bitmap bm = ShrinkBitmap(imgDecodableString,480,480);
+                //mStoryPicture.setImageBitmap(bm);
+                //Bitmap bm = BitmapFactory.decodeFile(mStoryImagePath);
+                mStoryPicture.setImageBitmap(bm);
 
             } else {
                 Toast.makeText(this, "You haven't picked Image",
@@ -563,8 +567,31 @@ public class NewStoryActivity extends ActionBarActivity {
     private void sendImageFile(Integer storyId) {
         if (mStoryImagePath.equals(""))
             return;
+
+
+        // CREATE TMP FILE
+        File outputDir = this.getCacheDir(); // context being the Activity pointer
+        File outputFile = null;
+        //Bitmap bitmap = BitmapFactory.decodeFile(mStoryImagePath);
+        Bitmap bitmap = ShrinkBitmap(mStoryImagePath,1280,1280);
+        FileOutputStream outputStream = null;
+        try {
+            outputFile = File.createTempFile("story_image", ".jpeg", outputDir);
+            outputStream = new FileOutputStream(outputFile);
+            try {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
+                //outputStream = new BufferedOutputStream(new FileOutputStream(file));
+            } finally {
+                outputStream.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        FileBody fileBody = new FileBody(outputFile);
+
         File imageFile = new File(mStoryImagePath);
-        FileBody fileBody = new FileBody(imageFile);
+        //FileBody fileBody = new FileBody(imageFile);
         String url = "http://lostinreality.net/story/" + storyId + "/uploadimage";
         MultipartRequest multipartRequest = new MultipartRequest(url, "file", fileBody, new SendFileSuccess(this,storyId), new SendFileError(this));
         queue.add(multipartRequest);
@@ -618,6 +645,30 @@ public class NewStoryActivity extends ActionBarActivity {
 
     private void leaveActivityAndReloadStories() {
         NavUtils.navigateUpFromSameTask(this);
+    }
+
+    private Bitmap ShrinkBitmap(String file, int width, int height){
+
+        BitmapFactory.Options bmpFactoryOptions = new BitmapFactory.Options();
+        bmpFactoryOptions.inJustDecodeBounds = true;
+        Bitmap bitmap = BitmapFactory.decodeFile(file, bmpFactoryOptions);
+
+        int heightRatio = (int)Math.ceil(bmpFactoryOptions.outHeight/(float)height);
+        int widthRatio = (int)Math.ceil(bmpFactoryOptions.outWidth/(float)width);
+
+        if (heightRatio > 1 || widthRatio > 1)
+        {
+            if (heightRatio > widthRatio)
+            {
+                bmpFactoryOptions.inSampleSize = heightRatio;
+            } else {
+                bmpFactoryOptions.inSampleSize = widthRatio;
+            }
+        }
+
+        bmpFactoryOptions.inJustDecodeBounds = false;
+        bitmap = BitmapFactory.decodeFile(file, bmpFactoryOptions);
+        return bitmap;
     }
 
 }

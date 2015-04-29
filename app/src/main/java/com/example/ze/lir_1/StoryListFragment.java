@@ -16,6 +16,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.google.android.gms.maps.model.LatLng;
@@ -35,13 +36,16 @@ public class StoryListFragment extends Fragment  {
     private StoryListAdapter storyListAdapter;
     private ArrayList<StoryItem> storyList;
     public Boolean askedToFetchStories = false;
+    private ImageLoader loader;
+    private Integer imagesCounter = 0;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         askedToFetchStories = false;
+        loader = NoAuthRequestSingleton.getInstance(getActivity().getApplicationContext()).getImageLoader();
 
-        storyListAdapter = new StoryListAdapter(getActivity(),this);
+        storyListAdapter = new StoryListAdapter(getActivity(),this, loader);
         return inflater.inflate(R.layout.story_list_fragment, container, false);
     }
 
@@ -95,6 +99,7 @@ public class StoryListFragment extends Fragment  {
                     break;
                 } else if (i==sortedList.size()-1) {
                     sortedList.add(newItem);
+                    break;
                 }
             }
         }
@@ -119,11 +124,32 @@ public class StoryListFragment extends Fragment  {
             } else {
                 storyList = sortStoryListByProximity(storyList, currentLocation);
                 storyListAdapter.setStoryList(storyList);
-                storyListAdapter.notifyDataSetChanged();
+                loadStoriesInCache(storyList);
+                //storyListAdapter.notifyDataSetChanged();
                 getActivity().findViewById(R.id.no_stories_warning).setVisibility(View.GONE);
                 storyListView.setVisibility(View.VISIBLE);
             }
         }
+    }
+
+    private void loadStoriesInCache(ArrayList<StoryItem> storyList) {
+        imagesCounter = storyList.size();
+        for (StoryItem st : storyList) {
+            loader.get(st.getUrlThumbnail(),new ImageLoader.ImageListener() {
+                @Override
+                public void onResponse(ImageLoader.ImageContainer response, boolean isImmediate) {
+                    imagesCounter -= 1;
+                    if (imagesCounter==0)
+                        storyListAdapter.notifyDataSetChanged();
+                }
+
+                @Override
+                public void onErrorResponse(VolleyError error) {
+
+                }
+            });
+        }
+
     }
 
     public void updateStoryListAdapterAfterFetched() {

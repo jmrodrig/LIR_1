@@ -1,7 +1,10 @@
 package com.example.ze.lir_1;
 
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.location.Geocoder;
 import android.location.Location;
@@ -9,6 +12,7 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.ResultReceiver;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 
@@ -78,6 +82,7 @@ public class MainActivity extends ActionBarActivity implements
     protected String mAddressOutput;
     private LatLng mFocusLocation;
     private Boolean startNewStoryActivity = false;
+    private Boolean noGpsService = true;
 
 
     @Override
@@ -98,7 +103,7 @@ public class MainActivity extends ActionBarActivity implements
         //TODO warn when no internet connection is set (wi-fi or network) http://developer.android.com/training/basics/network-ops/connecting.html
 
         // Get Request Queue
-        queue = RequestsSingleton.getInstance(this).getRequestQueue();
+        queue = NoAuthRequestSingleton.getInstance(this).getRequestQueue();
 
         mResultReceiver = new AddressResultReceiver(new Handler());
 
@@ -214,6 +219,15 @@ public class MainActivity extends ActionBarActivity implements
     protected void onStart() {
         super.onStart();
         mGoogleApiClient.connect();
+
+    }
+
+    private void isGpsOn() {
+        Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        if (location==null && noGpsService) {
+            GpsOffAlertDialog gpsOffAlertDialog = new GpsOffAlertDialog();
+            gpsOffAlertDialog.show(getSupportFragmentManager(), "gps_alert");
+        }
     }
 
     @Override
@@ -238,6 +252,7 @@ public class MainActivity extends ActionBarActivity implements
     @Override
     public void onConnected(Bundle connectionHint) {
         Log.i(TAG, "Connected to GoogleApiClient");
+        isGpsOn();
         getLastKnowLocation();
         inflateStoryMapFragment();
 
@@ -374,7 +389,7 @@ public class MainActivity extends ActionBarActivity implements
                 if (mAddressOutput.equals(""))
                     locationAddressText.setText("the desert? The ocean? Nowhere? Where is this?");
                 else
-                    locationAddressText.setText("Stories around " +buildAddress(mAddressOutput));
+                    locationAddressText.setText("Stories around " + buildAddress(mAddressOutput));
             }
 
             if (isStartNewStoryActivityAfterAddressReceived()) {
@@ -455,4 +470,9 @@ public class MainActivity extends ActionBarActivity implements
         intent.putExtra(Intent.EXTRA_SUBJECT, "User feedback");
         startActivity(Intent.createChooser(intent, "Send Email"));
     }
+
+    public void setUserGpsChoice(Boolean choice) {
+        noGpsService = choice;
+    }
 }
+

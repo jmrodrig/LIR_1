@@ -8,10 +8,10 @@
  To retrieve OAuth 2.0 tokens or invalidate tokens to disconnect a user. This disconnect
      option is required to comply with the Google+ Sign-In developer policies
     -->
-    <uses-permission android:name="android.permission.USE_CREDENTIALS" /> <!-- To retrieve the account name (email) as part of sign-in: -->
-    <uses-permission android:name="android.permission.GET_ACCOUNTS" /> <!-- To auto-complete the email text field in the login form with the user's emails -->
-    <uses-permission android:name="android.permission.READ_PROFILE" />
-    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!--<uses-permission android:name="android.permission.USE_CREDENTIALS" /> &lt;!&ndash; To retrieve the account name (email) as part of sign-in: &ndash;&gt;-->
+    <!--<uses-permission android:name="android.permission.GET_ACCOUNTS" /> &lt;!&ndash; To auto-complete the email text field in the login form with the user's emails &ndash;&gt;-->
+    <!--<uses-permission android:name="android.permission.READ_PROFILE" />-->
+    <!--<uses-permission android:name="android.permission.READ_CONTACTS" />-->
     <!-- To retrieve devise's location -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -28,7 +28,7 @@
         android:theme="@style/AppTheme" >
         <activity
             android:name=".MainActivity"
-            android:label="LIR  stories around you"
+            android:label="Lost in Reality"
             android:icon="@drawable/logo_100x100"
             android:launchMode="singleTop"
             android:screenOrientation="portrait">
@@ -69,8 +69,8 @@
             android:value="@integer/google_play_services_version" />
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
-            android:value="AIzaSyAALcWEPuzO2G2IgGRq759ohtkb1bzhA7M"/>
-            <!--android:value="AIzaSyBSNvXqcwwXXTORYoS-2CJ-aPaXspsKwdU" /> release key-->
+            android:value="AIzaSyBSNvXqcwwXXTORYoS-2CJ-aPaXspsKwdU"/>
+            <!--android:value="AIzaSyAALcWEPuzO2G2IgGRq759ohtkb1bzhA7M" /> debug key-->
 
         <service
             android:name=".FetchAddressIntentService"

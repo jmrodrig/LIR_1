@@ -4,53 +4,81 @@
     android:layout_height="match_parent">
 
 
-    <ImageView
-        android:layout_width="170dp"
-        android:layout_height="170dp"
-        android:id="@+id/logo_image"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="100dp"
-        android:src="@drawable/logo_vectorial_inver"
-        android:layout_gravity="center_horizontal|top"
-        android:visibility="gone" />
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
 
-    <ProgressBar
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/loading_stories_progress"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="0dp"
-        android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="50dp"
-        android:visibility="gone" />
+        <FrameLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:background="#ba000000" >
 
-    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/map_container" >
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No stories around here."
+                android:id="@+id/stories_number_text"
+                android:layout_gravity="center_horizontal"
+                android:textColor="#ffffffff"
+                android:padding="6dp" />
+        </FrameLayout>
 
-    </RelativeLayout>
+        <FrameLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent">
 
-    <ImageView
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:id="@+id/sight_image"
-        android:layout_centerVertical="true"
-        android:layout_centerHorizontal="true"
-        android:src="@drawable/map_sight_blue_area"
-        android:layout_gravity="center"
-        android:scaleType="fitXY"
-        android:alpha="3" />
+            <ImageView
+                android:layout_width="170dp"
+                android:layout_height="170dp"
+                android:id="@+id/logo_image"
+                android:layout_alignParentTop="true"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="100dp"
+                android:src="@drawable/logo_vectorial_inver"
+                android:layout_gravity="center_horizontal|top"
+                android:visibility="gone" />
 
-    <ImageView
-        android:layout_width="7dp"
-        android:layout_height="7dp"
-        android:id="@+id/sight_image_dot"
-        android:src="@drawable/map_sight_blue_dot"
-        android:layout_gravity="center" />
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/loading_stories_progress"
+                android:layout_alignParentTop="true"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="0dp"
+                android:layout_gravity="center_horizontal|bottom"
+                android:layout_marginBottom="50dp"
+                android:visibility="gone" />
+
+            <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/map_container" >
+
+            </RelativeLayout>
+
+            <ImageView
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:id="@+id/sight_image"
+                android:layout_centerVertical="true"
+                android:layout_centerHorizontal="true"
+                android:src="@drawable/map_sight_blue_area"
+                android:layout_gravity="center"
+                android:scaleType="fitXY"
+                android:alpha="3" />
+
+            <ImageView
+                android:layout_width="7dp"
+                android:layout_height="7dp"
+                android:id="@+id/sight_image_dot"
+                android:src="@drawable/map_sight_blue_dot"
+                android:layout_gravity="center" />
+
+        </FrameLayout>
+
+    </LinearLayout>
 
 
 </FrameLayout>

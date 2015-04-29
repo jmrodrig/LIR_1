@@ -2,6 +2,7 @@ package com.example.ze.lir_1;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.location.*;
 import android.net.Uri;
 import android.text.Layout;
@@ -11,9 +12,12 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.NetworkImageView;
 import com.google.android.gms.maps.model.LatLng;
@@ -30,10 +34,10 @@ public class StoryListAdapter extends BaseAdapter {
     private Context appContext;
     private StoryListFragment parentObj;
 
-    public StoryListAdapter(Context Appctxt, StoryListFragment parent ) {
+    public StoryListAdapter(Context Appctxt, StoryListFragment parent, ImageLoader ldr ) {
         appContext = Appctxt;
         parentObj = parent;
-        loader = RequestsSingleton.getInstance(appContext.getApplicationContext()).getImageLoader();
+        loader=ldr;
     }
 
     public void setStoryList(ArrayList<StoryItem> storyList) {
@@ -59,10 +63,11 @@ public class StoryListAdapter extends BaseAdapter {
         View row = convertView;
         if (row == null) {
             row = inflater.inflate(R.layout.story_row, null, false);
-            ViewHolder holder = new ViewHolder();
+            final ViewHolder holder = new ViewHolder();
             holder.userNameTextView = (TextView) row.findViewById(R.id.user_name);
             holder.storyTextTextView = (TextView) row.findViewById(R.id.story_text);
             holder.storyImageView = (NetworkImageView) row.findViewById(R.id.story_thumbnail);
+            //holder.storyImageView = (ImageView) row.findViewById(R.id.story_thumbnail);
             holder.userImageView = (NetworkImageView) row.findViewById(R.id.user_image);
             holder.upVoteStoryButton = (Button) row.findViewById(R.id.like_story_button);
             holder.deleteStoryButton = (Button) row.findViewById(R.id.delete_story_button);
@@ -73,8 +78,11 @@ public class StoryListAdapter extends BaseAdapter {
             holder.articleImageView = (NetworkImageView) row.findViewById(R.id.article_image);
             holder.articleLayout = (LinearLayout) row.findViewById(R.id.article_layout);
             holder.confirmDeleteDialog = (FrameLayout) row.findViewById(R.id.confirm_delete_dialog);
-            holder.confirmDeleteButton = (TextView) row.findViewById(R.id.confirm_button);
-            holder.cancelDeleteButton = (TextView) row.findViewById(R.id.cancel_button);
+            holder.confirmDeleteButton = (Button) row.findViewById(R.id.confirm_button);
+            holder.cancelDeleteButton = (Button) row.findViewById(R.id.cancel_button);
+            // IMAGE PROGRESS BARS
+            holder.storyImageProgress = (ProgressBar) row.findViewById(R.id.story_image_progress_bar);
+            holder.storyItem = getItem(position);
 
             row.setTag(holder);
         }
@@ -83,7 +91,18 @@ public class StoryListAdapter extends BaseAdapter {
         final ViewHolder holder = (ViewHolder) row.getTag();
         holder.userNameTextView.setText(storyItem.getUserName());
         holder.storyTextTextView.setText(storyItem.getStoryText());
-        holder.storyImageView.setImageUrl(storyItem.getUrlThumbnail(), loader);
+
+        //Story IMAGE
+        holder.storyImageProgress.setVisibility(View.VISIBLE);
+        if (storyItem.getUrlThumbnail().equals("")) {
+            holder.storyImageProgress.setVisibility(View.GONE);
+            holder.storyImageView.setVisibility(View.GONE);
+        } else {
+            holder.storyImageView.setImageUrl(storyItem.getUrlThumbnail(), loader);
+            holder.storyImageView.setVisibility(View.VISIBLE);
+        }
+        //holder.setImageFromNetwork(loader, storyItem.getUrlThumbnail(),row);
+        //User IMAGE
         holder.userImageView.setImageUrl(storyItem.getUrlUserThumbnail(), loader);
 
         holder.deleteStoryButton.setOnClickListener(new View.OnClickListener() {
@@ -97,6 +116,7 @@ public class StoryListAdapter extends BaseAdapter {
         holder.confirmDeleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                holder.confirmDeleteDialog.setVisibility(View.GONE);
                 parentObj.deleteStory(getItem(position).getStoryId());
             }
         });
@@ -142,25 +162,81 @@ public class StoryListAdapter extends BaseAdapter {
 
         //DISTANCE
         android.location.Location location = ((MainActivity) parentObj.getActivity()).getLastKnowLocation();
-        LatLng latLngLocation = new LatLng(location.getLatitude(),location.getLongitude());
-        LatLng latLngStory = storyItem.getStoryLatLng();
-        float distance = parentObj.calculateTwoPointsDistance(latLngLocation,latLngStory);
-        holder.distanceTextView.setText(Math.round(distance) + " m");
+        if (location != null) {
+            LatLng latLngLocation = new LatLng(location.getLatitude(), location.getLongitude());
+            LatLng latLngStory = storyItem.getStoryLatLng();
+            float distance = parentObj.calculateTwoPointsDistance(latLngLocation, latLngStory);
+            if (distance>10000)
+                holder.distanceTextView.setText(Math.round(distance/1000) + "km");
+            else if (distance >= 1000)
+                holder.distanceTextView.setText( String.valueOf(Math.ceil(distance/100)/10) + "km");
+                //holder.distanceTextView.setText( String.valueOf(Math.round(distance/100)/10) + "km");
+            else if (distance < 1000)
+                holder.distanceTextView.setText(Math.round(distance) + "m");
+        } else
+            holder.distanceTextView.setText("");
 
         return (row);
     }
 
-    static class ViewHolder{
-        TextView userNameTextView, storyTextTextView, articleTitleTextView, articleTextTextView, articleHostTextView, distanceTextView, confirmDeleteButton, cancelDeleteButton;
+    private class ViewHolder{
+        TextView userNameTextView, storyTextTextView, articleTitleTextView, articleTextTextView, articleHostTextView, distanceTextView;
         NetworkImageView storyImageView, userImageView, articleImageView;
-        Button deleteStoryButton, upVoteStoryButton;
+        //NetworkImageView userImageView, articleImageView;
+        //ImageView storyImageView;
+        Button deleteStoryButton, upVoteStoryButton, confirmDeleteButton, cancelDeleteButton;
         LinearLayout articleLayout;
         FrameLayout confirmDeleteDialog;
+        ProgressBar storyImageProgress;
+        StoryItem storyItem;
+
+        private Boolean loadingImage = false;
+
+        public void setImageFromNetwork(ImageLoader imageLoader, String imageUrl, View view) {
+
+            final ViewHolder hldr = (ViewHolder) view.getTag();
+
+            hldr.storyImageProgress.setVisibility(View.VISIBLE);
+            hldr.storyImageView.setVisibility(View.GONE);
+            hldr.storyImageView.setImageBitmap(null);
+
+            if (imageUrl.equals("")) {
+                hldr.storyImageProgress.setVisibility(View.GONE);
+                hldr.storyImageView.setVisibility(View.GONE);
+                return;
+            }
+
+            imageLoader.get(imageUrl, new ImageLoader.ImageListener() {
+                @Override
+                public void onResponse(ImageLoader.ImageContainer response, boolean isImmediate) {
+                    if (response != null ) {
+                        Bitmap bitmap = response.getBitmap();
+                        if (bitmap != null) {
+                            // ** code to turn off the progress wheel **
+                            // ** code to use the bitmap in your imageview **
+                            hldr.storyImageProgress.setVisibility(View.GONE);
+                            hldr.storyImageView.setVisibility(View.VISIBLE);
+                            hldr.storyImageView.setImageBitmap(bitmap);
+                        }
+                    }
+
+                }
+
+                @Override
+                public void onErrorResponse(VolleyError e) {
+                    hldr.storyImageProgress.setVisibility(View.GONE);
+                    loadingImage = false;
+
+                    // ** code to handle errors **
+                }
+            });
+
+        }
     }
 
     private Boolean isUserOwnerOfStory(StoryItem st) {
         String userId = SessionUser.getInstance().getUserEmail();
-        if (userId.equals(st.getAuthor().getAuthorId()))
+        if (userId.equals(st.getAuthor().getAuthorId()) || userId.equals("ideas@lostinreality.net"))
             return true;
         else
             return false;

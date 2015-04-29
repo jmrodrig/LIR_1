@@ -24,7 +24,7 @@
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="List"
+            android:text="stories"
             android:id="@+id/story_list_button"
             android:layout_weight="1" />
 
